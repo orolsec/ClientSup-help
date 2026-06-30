@@ -1,0 +1,64 @@
+ТЕХНИЧЕСКАЯ ДОКУМЕНТАЦИЯ SUPABASE
+
+1. Параметры доступа
+
+Project URL: https://fgpvruxszhbijvjqpr.supabase.co
+
+Anon Public Key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZncHZydXhzenhiaWp2dmpxcHJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NDI0NzMsImV4cCI6MjA5ODQxODQ3M30.paj3mpAANfmPSHhS3FUnJAYpMe8EyDR_-pDExmIkj7Q
+
+API Key (Secret): sb_secret_Xj5xcpW2AToGwgQseXihCg_tqh8mt4n
+
+2. Структура таблиц
+
+Таблица: leads
+
+id: int8 (Primary Key, Identity)
+
+full_name: text
+
+phone: text
+
+course: text
+
+visit_date: text
+
+created_at: timestamptz (Default: now())
+
+Таблица: certificates
+
+id: int8 (Primary Key, Identity)
+
+full_name: text
+
+phone: text
+
+score: int4
+
+created_at: timestamptz (Default: now())
+
+Таблица: settings
+
+id: int8 (Primary Key)
+
+data: jsonb (Хранение конфигурационных данных бота и настроек интерфейса)
+
+3. Технические настройки
+
+Режим работы: Стандартный API (PostgREST)
+
+Тип аутентификации: Anon Public
+
+Уровень безопасности: RLS (Row Level Security) необходимо активировать для всех таблиц
+
+Рекомендуемые политики:
+
+Read: SELECT (anon)
+
+Write: INSERT (anon) / UPDATE (authenticated)
+
+4. Конфигурация клиента
+
+Инициализация в JS:
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+auth: { persistSession: false }
+});

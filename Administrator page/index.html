@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClientSup | Панель Администратора</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+
+    <div id="login-view" class="fixed inset-0 bg-gray-100 dark:bg-gray-950 flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl w-full max-w-sm">
+            <h2 class="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">Вход в систему</h2>
+            <input type="text" id="login-user" placeholder="Логин" class="w-full p-3 mb-3 border dark:border-gray-700 bg-transparent dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+            <input type="password" id="login-pass" placeholder="Пароль" class="w-full p-3 mb-3 border dark:border-gray-700 bg-transparent dark:text-white rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+            <label class="flex items-center mb-6 text-sm text-gray-600 dark:text-gray-400">
+                <input type="checkbox" id="remember-me" class="mr-2"> Запомнить меня
+            </label>
+            <button onclick="app.login()" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700 transition">Войти</button>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden flex h-screen">
+        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-6 flex flex-col">
+            <h1 class="text-xl font-bold mb-8 text-indigo-600">ClientSup Admin</h1>
+            <nav class="space-y-4 flex-1">
+                <button onclick="app.navigate('leads')" class="block w-full text-left text-gray-600 dark:text-gray-300 hover:text-indigo-600 p-2"><i class="fa-solid fa-users mr-2"></i> Записи</button>
+                <button onclick="app.navigate('certificates')" class="block w-full text-left text-gray-600 dark:text-gray-300 hover:text-indigo-600 p-2"><i class="fa-solid fa-medal mr-2"></i> Сертификаты</button>
+                <button onclick="app.navigate('settings')" class="block w-full text-left text-gray-600 dark:text-gray-300 hover:text-indigo-600 p-2"><i class="fa-solid fa-gear mr-2"></i> Настройки</button>
+            </nav>
+            <div class="flex gap-4">
+                <button onclick="app.toggleTheme()" class="text-gray-500 dark:text-gray-400"><i class="fa-solid fa-circle-half-stroke"></i></button>
+                <button onclick="app.logout()" class="text-red-500 text-sm"><i class="fa-solid fa-right-from-bracket mr-2"></i> Выйти</button>
+            </div>
+        </aside>
+        <main class="flex-1 p-8 overflow-y-auto">
+            <h2 id="page-title" class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Записи</h2>
+            <div id="content-area" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"></div>
+        </main>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://fgpvruxszhbijvjqpr.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZncHZydXhzenhiaWp2dmpxcHJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NDI0NzMsImV4cCI6MjA5ODQxODQ3M30.paj3mpAANfmPSHhS3FUnJAYpMe8EyDR_-pDExmIkj7Q';
+        
+        // Добавление глобальной инициализации с принудительной проверкой
+        const supabaseClient = supabase.createClient(SUPABASE_URL.trim(), SUPABASE_KEY.trim(), {
+            auth: { persistSession: false }
+        });
+
+        window.app = {
+            async init() {
+                if (localStorage.getItem('isLoggedIn') === 'true') this.showApp();
+                await this.checkConnection();
+            },
+            async checkConnection() {
+                console.log("Проверка связи с Supabase API...");
+                const tables = ['leads', 'certificates', 'settings'];
+                for (const table of tables) {
+                    try {
+                        // Используем fetch для диагностики CORS, так как SDK может скрывать детали ошибки
+                        const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?limit=1`, {
+                            headers: { 'apikey': SUPABASE_KEY.trim(), 'Authorization': `Bearer ${SUPABASE_KEY.trim()}` }
+                        });
+                        if (response.ok) {
+                            console.log(`Успешно: Таблица '${table}' доступна.`);
+                        } else {
+                            console.error(`Таблица '${table}' вернула статус: ${response.status}`);
+                        }
+                    } catch (e) {
+                        console.error(`Ошибка сети для '${table}':`, e.message);
+                    }
+                }
+            },
+            showApp() {
+                document.getElementById('login-view').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                this.navigate('leads');
+            },
+            login() {
+                if(document.getElementById('login-user').value === 'admin' && document.getElementById('login-pass').value === 'admin') {
+                    if(document.getElementById('remember-me').checked) localStorage.setItem('isLoggedIn', 'true');
+                    this.showApp();
+                } else { alert('Неверно'); }
+            },
+            logout() { localStorage.removeItem('isLoggedIn'); location.reload(); },
+            toggleTheme() { document.documentElement.classList.toggle('dark'); },
+            async navigate(view) {
+                const area = document.getElementById('content-area');
+                document.getElementById('page-title').innerText = view === 'leads' ? 'Записи на курсы' : 'Настройки';
+                const { data, error } = await supabaseClient.from(view).select('*');
+                if (error) area.innerHTML = `<p class="text-red-500">Ошибка: ${error.message}</p>`;
+                else area.innerHTML = `<pre class="text-gray-800 dark:text-gray-200">${JSON.stringify(data, null, 2)}</pre>`;
+            }
+        };
+        app.init();
+    </script>
+</body>
+</html>
